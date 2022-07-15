@@ -1,8 +1,8 @@
-
 import torch.nn as nn
-from transformers import BertModel, BartForConditionalGeneration, AutoTokenizer, BartTokenizer
+from transformers import BertModel, BartForConditionalGeneration, AutoTokenizer, AutoModelForSeq2SeqLM
 
 from .config import Config4cls, Config4gen
+
 
 class BertClassification(nn.Module):
     def __init__(self, config: Config4cls):
@@ -19,24 +19,19 @@ class BertClassification(nn.Module):
 
         return x
 
-class BartGeneration(nn.Module):
-    def __init__(self, config: Config4gen):
-        super(BartGeneration, self).__init__()
 
-        self.bart = BartForConditionalGeneration.from_pretrained(config.ptm_name, cache_dir=config.ptm_path)
+class PTMGeneration(nn.Module):
+    def __init__(self, config: Config4gen):
+        super(PTMGeneration, self).__init__()
+
+        self.PTM = AutoModelForSeq2SeqLM.from_pretrained(config.ptm_name, cache_dir=config.ptm_path)
         self.tokenizer = AutoTokenizer.from_pretrained(config.ptm_name, cache_dir=config.ptm_path)
 
     def forward(self, x, y):
-        out = self.bart(input_ids=x, attention_mask=(x == 0),
-                        decoder_input_ids=y, decoder_attention_mask=(y == 0)).logits
+        out = self.PTM(input_ids=x, attention_mask=(x == 0),
+                       labels=y, decoder_attention_mask=(y == 0))
 
-        return out
+        logits = out.logits
+        loss = out.loss
 
-    def generate(self, x):
-        summary_ids = self.bart.generate(x, num_beams=2, min_length=0, max_length=20)
-
-        res = self.tokenizer.batch_decode(summary_ids,
-                                          skip_special_tokens=True,
-                                          clean_up_tokenization_spaces=False)[0]
-
-        return res
+        return logits, loss

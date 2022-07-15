@@ -44,6 +44,7 @@ def getStandard4cls(path) -> Tuple[List, List, List, List]:
 
     return purpose, method, other, titles
 
+
 @timer
 def getStandard4gen(path) -> Tuple[List, List]:
     """
@@ -72,6 +73,7 @@ def getStandard4gen(path) -> Tuple[List, List]:
 
     return contents, titles
 
+
 class StandardDataset(Dataset):
     def __init__(self):
         super(StandardDataset, self).__init__()
@@ -86,7 +88,7 @@ class StandardDataset(Dataset):
         return train_index.tolist(), test_index.tolist()
 
     def getSampler(self):
-        assert hasattr(self, 'train_index') and hasattr(self, 'test_index'),\
+        assert hasattr(self, 'train_index') and hasattr(self, 'test_index'), \
             print('necessary class member default: index')
 
         return SubsetRandomSampler(self.train_index), SubsetRandomSampler(self.test_index)
@@ -124,6 +126,7 @@ class StandardDataset4cls(StandardDataset):
     def __len__(self):
         return len(self.X)
 
+
 class StandardDataset4gen(StandardDataset):
     def __init__(self, path, config: Config4gen):
         super(StandardDataset4gen, self).__init__()
@@ -139,12 +142,13 @@ class StandardDataset4gen(StandardDataset):
                                                 add_special_tokens=True)
                                for content in contents], dtype=torch.long)
 
-        self.Y = torch.tensor([tokenizer.encode(text=title,
-                                                truncation=True,  # 截断
-                                                padding='max_length',  # 填充到max_length
-                                                max_length=config.title_pad_size,
-                                                add_special_tokens=True)
-                               for title in self.titles], dtype=torch.long)
+        with tokenizer.as_target_tokenizer():
+            self.Y = torch.tensor([tokenizer.encode(text=title,
+                                                    truncation=True,  # 截断
+                                                    padding='max_length',  # 填充到max_length
+                                                    max_length=config.title_pad_size,
+                                                    add_special_tokens=True)
+                                   for title in self.titles], dtype=torch.long)
 
         # 训练-测试集划分的采样器
         self.train_index, self.test_index = self.buildSamplerIndex(self.X, self.Y, config.cv, config.seed)
