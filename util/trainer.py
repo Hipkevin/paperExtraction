@@ -1,7 +1,7 @@
 from . import timer
 from .config import Config4cls, Config4gen
 
-from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, StepLR
 from torchmetrics import Accuracy, Precision, Recall, F1, ROUGEScore, BLEUScore
 from pprint import pprint
 
@@ -73,9 +73,9 @@ def test4cls(test_loader, model, config):
 
 @timer
 def train4gen(model, train_loader, val_loader, optimizer, criterion, config: Config4gen):
-
     val_BLUE_metric = BLEUScore(n_gram=1).to(config.device)
-    scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=config.T_0, T_mult=config.T_multi, eta_min=1e-6)
+    # scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=config.T_0, T_mult=config.T_multi, eta_min=1e-6)
+    scheduler = StepLR(optimizer, step_size=500, gamma=0.95)
 
     for epoch in range(config.epoch_size):
 
@@ -109,11 +109,12 @@ def train4gen(model, train_loader, val_loader, optimizer, criterion, config: Con
                                                         clean_up_tokenization_spaces=True)]
 
                     val_BLUE_metric(pre, title_text)
+                # print(pre, title_text)
 
                 val_BLUE = val_BLUE_metric.compute()
                 print(f'epoch: {epoch + 1} batch: {idx} loss: {loss} | BLUE-1: {val_BLUE}')
                 val_BLUE_metric.reset()
-        scheduler.step()
+            scheduler.step()
 
     return model
 
@@ -145,6 +146,9 @@ def test4gen(test_loader, model, config: Config4gen):
         BLUE1_metric(pre, title_text)
         BLUE2_metric(pre, title_text)
         BLUE3_metric(pre, title_text)
+
+    print(pre)
+    print(title_text)
 
     ROUGE = ROUGE_metric.compute()
     BLUE1 = BLUE1_metric.compute()
