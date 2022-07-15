@@ -37,7 +37,7 @@ class Config4gen:
         self.ptm_path = 'models'
 
         self.epoch_size = 10
-        self.batch_size = 32
+        self.batch_size = 64
         self.learning_rate = 2e-5
         self.weight_decay = 1e-4
         self.dropout = 0.5

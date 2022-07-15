@@ -26,12 +26,13 @@ class PTMGeneration(nn.Module):
 
         self.PTM = AutoModelForSeq2SeqLM.from_pretrained(config.ptm_name, cache_dir=config.ptm_path)
         self.tokenizer = AutoTokenizer.from_pretrained(config.ptm_name, cache_dir=config.ptm_path)
+        self.dropout = nn.Dropout(config.dropout)
 
     def forward(self, x, y):
         out = self.PTM(input_ids=x, attention_mask=(x == 0),
                        labels=y, decoder_attention_mask=(y == 0))
 
-        logits = out.logits
+        logits = self.dropout(out.logits)
         loss = out.loss
 
         return logits, loss
