@@ -73,6 +73,7 @@ def test4cls(test_loader, model, config):
 
 @timer
 def train4gen(model, train_loader, val_loader, optimizer, criterion, config: Config4gen):
+
     val_BLUE_metric = BLEUScore(n_gram=1).to(config.device)
     scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=config.T_0, T_mult=config.T_multi, eta_min=1e-6)
 
