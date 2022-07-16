@@ -38,9 +38,12 @@ def getStandard4cls(path) -> Tuple[List, List, List, List]:
             elif '方法】' in a:
                 method.append(a.strip('方法】。'))
 
-            else:
+            elif '作者简介' in a:
                 a = a.split('作者简介')[0]
                 other.append(a.split('】')[1].strip(' 。'))
+
+            else:
+                other.append(a.strip('。').strip())
 
     return purpose, method, other, titles
 

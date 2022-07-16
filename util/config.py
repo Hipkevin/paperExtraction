@@ -9,11 +9,12 @@ class Config4cls:
         self.pad_size = 50
 
         # uer/bart-base-chinese-cluecorpussmall
-        self.ptm_name = 'bert-base-chinese'
+        # bert-base-chinese
+        self.ptm_name = 'uer/bart-base-chinese-cluecorpussmall'
         self.ptm_path = 'models'
 
         self.epoch_size = 10
-        self.batch_size = 32
+        self.batch_size = 64
         self.learning_rate = 2e-5
         self.weight_decay = 1e-4
         self.dropout = 0.5
@@ -46,5 +47,5 @@ class Config4gen:
         self.T_0 = 6
         self.T_multi = 2
 
-        self.num_beams = 4
+        self.num_beams = 2
         self.seed = 42

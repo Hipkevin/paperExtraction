@@ -26,13 +26,28 @@ class PTMGeneration(nn.Module):
 
         self.PTM = AutoModelForSeq2SeqLM.from_pretrained(config.ptm_name, cache_dir=config.ptm_path)
         self.tokenizer = AutoTokenizer.from_pretrained(config.ptm_name, cache_dir=config.ptm_path)
+
+        self.classifier = nn.Linear(768, 3)
         self.dropout = nn.Dropout(config.dropout)
 
-    def forward(self, x, y):
-        out = self.PTM(input_ids=x, attention_mask=(x == 0),
-                       labels=y, decoder_attention_mask=(y == 0))
+    def forward(self, *args):
+        if len(args) == 1:
+            x = args[0]
+            encoder = self.PTM.get_encoder()
+            out = encoder(x, attention_mask=(x == 0)).last_hidden_state[:, 0, :]
 
-        logits = self.dropout(out.logits)
-        loss = out.loss
+            return self.dropout(self.classifier(out))
 
-        return logits, loss
+        elif len(args) == 2:
+            x, y = args[0], args[1]
+
+            out = self.PTM(input_ids=x, attention_mask=(x == 0),
+                           labels=y, decoder_attention_mask=(y == 0))
+
+            logits = self.dropout(out.logits)
+            loss = out.loss
+
+            return logits, loss
+
+        else:
+            raise Exception("Param Error.")
