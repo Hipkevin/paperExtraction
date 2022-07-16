@@ -36,3 +36,33 @@
 | Model | Accuracy | Precision | Recall | F1 |
 | :---: | :---: | :---: | :---: | :---: |
 | Bert | 0.7259 | 0.8568 | 0.7258 | 0.7419 |
+| Bart | 0.6272 | 0.6164 | 0.6272 | 0.6107 |
+
+### 实验组2：
+参数：
+
+        self.num_classes = 3
+        self.content_pad_size = 150
+        self.title_pad_size = 30
+
+        self.ptm_name = 'uer/bart-base-chinese-cluecorpussmall'
+        self.ptm_path = 'models'
+
+        self.epoch_size = 10
+        self.batch_size = 64
+        self.learning_rate = 2e-5
+        self.weight_decay = 1e-4
+        self.dropout = 0.5
+        self.cv = 0.15
+
+        self.T_0 = 6
+        self.T_multi = 2
+
+        self.num_beams = 2
+        self.seed = 42
+
+
+| Model | BLEU-1 | BLEU-2 | BLEU-3 | RougeL |
+| :---: | :---: | :---: | :---: | :---: |
+| Bart | 0.4814 | 0.0 | 0.0 | 0.0 |
+| Bart+CLS | 0.2136 | 0.0 | 0.0 | 0.0 |
