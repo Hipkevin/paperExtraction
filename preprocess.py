@@ -3,6 +3,9 @@ import os
 
 from tqdm import tqdm
 
+from util.dataTool import getStandard4gen
+
+
 def replace_name(s: str) -> str:
     replace_dict = {'【目的/意义】': '【目的】',
                     '【方法/过程】': '【方法】',
@@ -16,7 +19,7 @@ def replace_name(s: str) -> str:
     return s
 
 
-if __name__ == '__main__':
+def getStandard(file_name):
     path = 'data/all'
 
     data = pd.DataFrame()
@@ -25,7 +28,8 @@ if __name__ == '__main__':
 
     result = list()
     for idx, item in tqdm(data.iterrows(), desc='Extracting'):
-        if '[' == str(item['abstract'])[0] or '【' == str(item['abstract'])[0]:
+        if str(item['title'])[0: 2] == '基于' and '综述' not in str(item['title']):
+            # ('[' == str(item['abstract'])[0] or '【' == str(item['abstract'])[0]):
             result.append([item['title'],
                            item['abstract'].replace('[', '【').replace(']', '】').replace(' ', ''),
                            item['keywords']])
@@ -34,4 +38,31 @@ if __name__ == '__main__':
 
     result['abstract'] = result['abstract'].apply(replace_name)
 
-    result.to_excel('standard2.xlsx', index=False)
+    result.to_excel(file_name, index=False)
+
+
+def write2txt(content_list, title_list, name):
+    with open(name, 'w', encoding='utf8') as file:
+        file.write('text_a' + '\t' + 'label' + '\n')
+
+        for c, t in zip(content_list, title_list):
+            file.write(c.strip() + '\t' + t.strip() + '\n')
+
+
+if __name__ == '__main__':
+    # getStandard('standard2.xlsx')
+
+    content, title = getStandard4gen('standard2.xlsx')
+
+    cv = 0.15
+    test_index = int(len(content) * cv)
+
+    # train
+    content_train = content[test_index:]
+    title_train = title[test_index:]
+    write2txt(content_train, title_train, 'p2_t2t_standard2_train.txt')
+
+    # test
+    content_test = content[0: test_index]
+    title_test = title[0: test_index]
+    write2txt(content_test, title_test, 'p2_t2t_standard2_test.txt')

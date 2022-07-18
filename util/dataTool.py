@@ -71,6 +71,8 @@ def getStandard4gen(path) -> Tuple[List, List]:
                 content += a.strip('【目的】。')
             elif '方法】' in a:
                 content += a.strip('方法】。')
+            else:
+                content = a.strip()
 
         contents.append(content)
 
