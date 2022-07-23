@@ -1,3 +1,11 @@
 transformers
 torchmetrics
 openpyxl
+jieba
+torch
+tokenizers
+pandas
+scikit-learn
+numpy
+tqdm
+gensim

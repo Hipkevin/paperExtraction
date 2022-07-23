@@ -34,8 +34,9 @@ class Config4gen:
         # uer/bart-base-chinese-cluecorpussmall
         # fnlp/bart-base-chinese
         # uer/t5-base-chinese-cluecorpussmall
-        self.ptm_name = 'uer/bart-base-chinese-cluecorpussmall'
+        self.ptm_name = 'uer/t5-base-chinese-cluecorpussmall'
         self.ptm_path = 'models'
+        self.emb = None
 
         self.epoch_size = 10
         self.batch_size = 64

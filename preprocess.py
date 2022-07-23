@@ -28,8 +28,8 @@ def getStandard(file_name):
 
     result = list()
     for idx, item in tqdm(data.iterrows(), desc='Extracting'):
-        if str(item['title'])[0: 2] == '基于' and '综述' not in str(item['title']):
-            # ('[' == str(item['abstract'])[0] or '【' == str(item['abstract'])[0]):
+        if str(item['title'])[0: 2] == '基于' and '综述' not in str(item['title']) and \
+                ('[' == str(item['abstract'])[0] or '【' == str(item['abstract'])[0]):
             result.append([item['title'],
                            item['abstract'].replace('[', '【').replace(']', '】').replace(' ', ''),
                            item['keywords']])
@@ -50,19 +50,19 @@ def write2txt(content_list, title_list, name):
 
 
 if __name__ == '__main__':
-    # getStandard('standard2.xlsx')
+    getStandard('standard.xlsx')
 
-    content, title = getStandard4gen('standard2.xlsx')
-
-    cv = 0.15
-    test_index = int(len(content) * cv)
-
-    # train
-    content_train = content[test_index:]
-    title_train = title[test_index:]
-    write2txt(content_train, title_train, 'p2_t2t_standard2_train.txt')
-
-    # test
-    content_test = content[0: test_index]
-    title_test = title[0: test_index]
-    write2txt(content_test, title_test, 'p2_t2t_standard2_test.txt')
+    # content, title = getStandard4gen('standard2.xlsx')
+    #
+    # cv = 0.15
+    # test_index = int(len(content) * cv)
+    #
+    # # train
+    # content_train = content[test_index:]
+    # title_train = title[test_index:]
+    # write2txt(content_train, title_train, 'p2_t2t_standard2_train.txt')
+    #
+    # # test
+    # content_test = content[0: test_index]
+    # title_test = title[0: test_index]
+    # write2txt(content_test, title_test, 'p2_t2t_standard2_test.txt')

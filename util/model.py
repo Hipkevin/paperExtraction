@@ -1,7 +1,8 @@
 import torch.nn as nn
-from transformers import BertModel, BartForConditionalGeneration, AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import BertModel, AutoTokenizer, AutoModelForSeq2SeqLM
 
 from .config import Config4cls, Config4gen
+from .wvTool import S2STokenizer
 
 
 class BertClassification(nn.Module):
@@ -43,6 +44,38 @@ class PTMGeneration(nn.Module):
 
             out = self.PTM(input_ids=x, attention_mask=(x == 0),
                            labels=y, decoder_attention_mask=(y == 0))
+
+            logits = self.dropout(out.logits)
+            loss = out.loss
+
+            return logits, loss
+
+        else:
+            raise Exception("Param Error.")
+
+
+class Seq2SeqModel(PTMGeneration):
+    def __init__(self, config):
+        super(Seq2SeqModel, self).__init__(config)
+
+        self.embedding = nn.Embedding.from_pretrained(config.emb)
+
+    def forward(self, *args):
+        if len(args) == 1:
+            x = args[0]
+            encoder = self.PTM.get_encoder()
+            out = encoder(x, attention_mask=(x == 0),
+                          inputs_embeds=self.embedding).last_hidden_state[:, 0, :]
+
+            return self.dropout(self.classifier(out))
+
+        elif len(args) == 2:
+            x, y = args[0], args[1]
+
+            out = self.PTM(input_ids=x, attention_mask=(x == 0),
+                           labels=y, decoder_attention_mask=(y == 0),
+                           inputs_embeds=self.embedding,
+                           decoder_inputs_embeds=self.embedding)
 
             logits = self.dropout(out.logits)
             loss = out.loss
