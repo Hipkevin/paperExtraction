@@ -100,14 +100,15 @@ class WVHandle:
         with open(corpus_path, 'r', encoding='utf8') as file:
             content = file.read().strip().split('\n')
 
-        text = [c.split(' ') for c in content]
-        wv_model = gensim.models.word2vec.Word2Vec(text, size=wv_dim, min_count=1, seed=seed)
+        text = [list(jieba.cut(c)) for c in content]
+        wv_model = gensim.models.word2vec.Word2Vec(text, vector_size=wv_dim, min_count=1, seed=seed)
 
-        embeddings = np.random.rand(len(self.vocab), wv_dim)
+        embeddings = np.zeros((len(self.vocab), wv_dim))
 
-        for word in wv_model.wv.vocab:
-            idx = self.vocab[word]
-            embeddings[idx] = np.asarray(wv_model.wv.get_vector(word), dtype='float32')
+        for word in self.vocab.token2id.keys():
+            if word in wv_model.wv:
+                idx = self.vocab[word]
+                embeddings[idx] = np.asarray(wv_model.wv.get_vector(word), dtype='float32')
 
         np.savez_compressed(save_path, embeddings=embeddings)
 

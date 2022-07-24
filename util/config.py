@@ -1,4 +1,7 @@
 import torch
+import numpy as np
+
+from .wvTool import Vocab
 
 
 class Config4cls:
@@ -36,7 +39,9 @@ class Config4gen:
         # uer/t5-base-chinese-cluecorpussmall
         self.ptm_name = 'uer/t5-base-chinese-cluecorpussmall'
         self.ptm_path = 'models'
-        self.emb = None
+
+        self.emb = torch.tensor(np.load('wv_150.npz')['embeddings'].astype('float32'))
+        self.vocab = Vocab().load_from_pkl('vocab.pkl')
 
         self.epoch_size = 10
         self.batch_size = 64

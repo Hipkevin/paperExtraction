@@ -55,10 +55,11 @@ class PTMGeneration(nn.Module):
 
 
 class Seq2SeqModel(PTMGeneration):
-    def __init__(self, config):
+    def __init__(self, config: Config4gen):
         super(Seq2SeqModel, self).__init__(config)
 
         self.embedding = nn.Embedding.from_pretrained(config.emb)
+        self.tokenizer = S2STokenizer(config.vocab)
 
     def forward(self, *args):
         if len(args) == 1:
