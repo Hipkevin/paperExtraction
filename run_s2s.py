@@ -10,6 +10,8 @@ from util.trainer import train4gen, test4gen
 
 from util.config import Config4gen
 
+from datasets import Dataset
+
 # seed everything
 seed = 42
 random.seed(seed)

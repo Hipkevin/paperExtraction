@@ -101,7 +101,8 @@ class BartSeq2SeqModel(nn.Module):
 
         b_config = BartConfig(d_model=768,
                               decoder_layers=6, encoder_layers=6,
-                              vocab_size=len(config.vocab))
+                              vocab_size=len(config.vocab),
+                              decoder_start_token_id=2)
         self.PTM = BartForConditionalGeneration(b_config)
 
         self.PTM.model.shared = nn.Embedding.from_pretrained(config.emb)
