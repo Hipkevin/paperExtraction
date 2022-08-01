@@ -7,6 +7,7 @@ import numpy as np
 from typing import Union, List, Optional, Tuple, Dict
 from transformers import PreTrainedTokenizer
 
+
 class Vocab:
     def __init__(self):
         super(Vocab, self).__init__()
@@ -26,7 +27,7 @@ class Vocab:
     def __len__(self):
         return len(self.token2id)
 
-    def add_from_corpus(self, file_path, max_size, min_freq, user_dict=None):
+    def add_from_corpus(self, file_path, min_freq, user_dict=None):
         if user_dict is not None:
             jieba.load_userdict(user_dict)
 
@@ -38,8 +39,7 @@ class Vocab:
                 for word in content:
                     vocab[word] = vocab.get(word, 0) + 1
 
-            vocab_list = sorted([_ for _ in vocab.items() if _[1] >= min_freq],
-                                key=lambda x: x[1], reverse=True)[:max_size]
+            vocab_list = [_ for _ in vocab.items() if _[1] >= min_freq]
 
             new_vocab = {word_count[0]: idx + 3 for idx, word_count in enumerate(vocab_list)}
             self.token2id.update(new_vocab)
@@ -66,8 +66,13 @@ class Vocab:
 class S2STokenizer(PreTrainedTokenizer):
     def __init__(self, vocab: Vocab):
         super(S2STokenizer, self).__init__()
-        
+
         self.vocab = vocab
+        self.add_special_tokens({'pad_token': vocab[0],
+                                 'unk_token': vocab[1],
+                                 'mask_token': vocab[2]})
+        self.unk_token = '[UNK]'
+        self.pad_token = '[PAD]'
 
     @property
     def vocab_size(self) -> int:
@@ -77,7 +82,7 @@ class S2STokenizer(PreTrainedTokenizer):
         return list(jieba.cut(text))
 
     def _convert_token_to_id(self, token):
-        return self.vocab[token]
+        return self.vocab[token] if token in self.vocab.token2id else 1
 
     def _convert_id_to_token(self, index: int) -> str:
         return self.vocab[index]
@@ -101,7 +106,7 @@ class WVHandle:
             content = file.read().strip().split('\n')
 
         text = [list(jieba.cut(c)) for c in content]
-        wv_model = gensim.models.word2vec.Word2Vec(text, vector_size=wv_dim, min_count=1, seed=seed)
+        wv_model = gensim.models.word2vec.Word2Vec(text, vector_size=wv_dim, min_count=2, seed=seed)
 
         embeddings = np.zeros((len(self.vocab), wv_dim))
 

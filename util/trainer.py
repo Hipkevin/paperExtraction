@@ -2,8 +2,12 @@ from . import timer
 from .config import Config4cls, Config4gen
 
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, StepLR
+from sacrebleu.metrics import BLEU
 from torchmetrics import Accuracy, Precision, Recall, F1, ROUGEScore, BLEUScore
 from pprint import pprint
+
+import numpy as np
+import jieba
 
 
 @timer
@@ -73,8 +77,6 @@ def test4cls(test_loader, model, config):
 
 @timer
 def train4gen(model, train_loader, val_loader, optimizer, criterion, config: Config4gen):
-    val_BLUE_metric = BLEUScore(n_gram=1).to(config.device)
-    # scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=config.T_0, T_mult=config.T_multi, eta_min=1e-6)
     scheduler = StepLR(optimizer, step_size=500, gamma=0.95)
 
     for epoch in range(config.epoch_size):
@@ -89,32 +91,10 @@ def train4gen(model, train_loader, val_loader, optimizer, criterion, config: Con
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-
-            # validation
-            if idx % 10 == 0:
-                model.eval()
-                for data in val_loader:
-                    x, _, title_text = data[0].to(config.device), data[1].to(config.device), data[2]
-
-                    summary_ids = model.PTM.generate(x,
-                                                     num_beams=config.num_beams,
-                                                     no_repeat_ngram_size=1,
-                                                     min_length=0,
-                                                     max_length=config.title_pad_size,
-                                                     early_stopping=True)
-
-                    pre = [p.replace(' ', '') for p in
-                           model.tokenizer.batch_decode(summary_ids,
-                                                        skip_special_tokens=True,
-                                                        clean_up_tokenization_spaces=True)]
-
-                    val_BLUE_metric(pre, title_text)
-                # print(pre, title_text)
-
-                val_BLUE = val_BLUE_metric.compute()
-                print(f'epoch: {epoch + 1} batch: {idx} loss: {loss} | BLUE-1: {val_BLUE}')
-                val_BLUE_metric.reset()
             scheduler.step()
+
+            if idx % 10 == 0:
+                print(f'epoch: {epoch + 1} batch: {idx} loss: {loss}')
 
     return model
 
@@ -122,11 +102,11 @@ def train4gen(model, train_loader, val_loader, optimizer, criterion, config: Con
 @timer
 def test4gen(test_loader, model, config: Config4gen):
     model.eval()
+    BLEU_metric = BLEU(effective_order=True)
 
-    ROUGE_metric = ROUGEScore(rouge_keys='rougeL').to(config.device)
-    BLUE1_metric = BLEUScore(n_gram=1).to(config.device)
-    BLUE2_metric = BLEUScore(n_gram=2).to(config.device)
-    BLUE3_metric = BLEUScore(n_gram=3).to(config.device)
+    scores = np.zeros(4)
+    bp = 0
+    count = 0
 
     for data in test_loader:
         x, _, title_text = data[0].to(config.device), data[1].to(config.device), data[2]
@@ -134,28 +114,22 @@ def test4gen(test_loader, model, config: Config4gen):
         summary_ids = model.PTM.generate(x,
                                          num_beams=config.num_beams,
                                          no_repeat_ngram_size=1,
+                                         length_penalty=0.8,
                                          min_length=0,
                                          max_length=config.title_pad_size,
                                          early_stopping=True)
-        pre = [p.replace(' ', '') for p in
-               model.tokenizer.batch_decode(summary_ids,
-                                            skip_special_tokens=True,
-                                            clean_up_tokenization_spaces=True)]
+        pre = model.tokenizer.batch_decode(summary_ids,
+                                           skip_special_tokens=True,
+                                           clean_up_tokenization_spaces=True)
+        for p, t in zip(pre, title_text):
+            s = BLEU_metric.sentence_score(p, [' '.join(jieba.cut(t))])
+            scores += s.precisions
+            bp += s.score
+            count += 1
 
-        ROUGE_metric(pre, title_text)
-        BLUE1_metric(pre, title_text)
-        BLUE2_metric(pre, title_text)
-        BLUE3_metric(pre, title_text)
+    for p, t in zip(pre[0: 5], title_text[0: 5]):
+        print('gen:', p.replace(' ', ''))
+        print('tgt:', t)
 
-    print(pre)
-    print(title_text)
-
-    ROUGE = ROUGE_metric.compute()
-    BLUE1 = BLUE1_metric.compute()
-    BLUE2 = BLUE2_metric.compute()
-    BLUE3 = BLUE3_metric.compute()
-
-    pprint(ROUGE)
-    print(f'BLUE-1: {BLUE1}')
-    print(f'BLUE-2: {BLUE2}')
-    print(f'BLUE-3: {BLUE3}')
+    print(f'BP_-BLEU: {bp / count}')
+    print(f'BLEU-1/2/3/4: {scores / count}')

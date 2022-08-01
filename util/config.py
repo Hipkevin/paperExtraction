@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-from .wvTool import Vocab
+from .wvTool import Vocab, S2STokenizer
 
 
 class Config4cls:
@@ -37,14 +37,17 @@ class Config4gen:
         # uer/bart-base-chinese-cluecorpussmall
         # fnlp/bart-base-chinese
         # uer/t5-base-chinese-cluecorpussmall
-        self.ptm_name = 'uer/t5-base-chinese-cluecorpussmall'
+        self.ptm_name = 'uer/bart-base-chinese-cluecorpussmall'
         self.ptm_path = 'models'
 
-        self.emb = torch.tensor(np.load('wv_150.npz')['embeddings'].astype('float32'))
-        self.vocab = Vocab().load_from_pkl('vocab.pkl')
+        self.emb_size = 300
+        self.emb = torch.tensor(np.load(f'wv_{self.emb_size}.npz')['embeddings'].astype('float32'))
+        self.vocab = Vocab()
+        self.vocab.load_from_pkl('vocab.pkl')
+        self.tokenizer = S2STokenizer(self.vocab)
 
         self.epoch_size = 10
-        self.batch_size = 64
+        self.batch_size = 256
         self.learning_rate = 2e-5
         self.weight_decay = 1e-4
         self.dropout = 0.5

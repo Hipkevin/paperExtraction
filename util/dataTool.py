@@ -138,7 +138,8 @@ class StandardDataset4gen(StandardDataset):
 
         contents, self.titles = getStandard4gen(path)
 
-        tokenizer = AutoTokenizer.from_pretrained(config.ptm_name, cache_dir=config.ptm_path)
+        # tokenizer = AutoTokenizer.from_pretrained(config.ptm_name, cache_dir=config.ptm_path)
+        tokenizer = config.tokenizer
 
         self.X = torch.tensor([tokenizer.encode(text=content,
                                                 truncation=True,  # 截断
@@ -147,25 +148,12 @@ class StandardDataset4gen(StandardDataset):
                                                 add_special_tokens=True)
                                for content in contents], dtype=torch.long)
 
-        with tokenizer.as_target_tokenizer():
-            self.Y = torch.tensor([tokenizer.encode(text=title,
-                                                    truncation=True,  # 截断
-                                                    padding='max_length',  # 填充到max_length
-                                                    max_length=config.title_pad_size,
-                                                    add_special_tokens=True)
-                                   for title in self.titles], dtype=torch.long)
-
-        # 训练-测试集划分的采样器
-        self.train_index, self.test_index = self.buildSamplerIndex(self.X, self.Y, config.cv, config.seed)
-
-    @staticmethod
-    def buildSamplerIndex(X, Y, cv=0.15, random_seed=0):
-        # 对数据集进行随机抽样，返回划分后的索引
-        # 通过该索引构造SubsetRandomSampler，完成数据集划分
-        stratified_split = ShuffleSplit(n_splits=1, test_size=cv, random_state=random_seed)
-        train_index, test_index = list(stratified_split.split(X))[0]
-
-        return train_index.tolist(), test_index.tolist()
+        self.Y = torch.tensor([tokenizer.encode(text=title,
+                                                truncation=True,  # 截断
+                                                padding='max_length',  # 填充到max_length
+                                                max_length=config.title_pad_size,
+                                                add_special_tokens=True)
+                               for title in self.titles], dtype=torch.long)
 
     def __getitem__(self, item):
         return self.X[item], self.Y[item], self.titles[item]

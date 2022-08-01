@@ -5,7 +5,7 @@ import numpy as np
 from torch.utils.data import DataLoader
 
 from util.dataTool import StandardDataset4gen
-from util.model import PTMGeneration
+from util.model import PTMGeneration, Seq2SeqModel, BartSeq2SeqModel
 from util.trainer import train4gen, test4gen
 
 from util.config import Config4gen
@@ -22,15 +22,15 @@ if __name__ == '__main__':
     config.seed = seed
 
     print('Data Loading...')
-    model = PTMGeneration(config).to(config.device)
+    model = BartSeq2SeqModel(config).to(config.device)
 
-    dataset = StandardDataset4gen('data/standard.xlsx', config)
-    print(f'dataset size: {len(dataset)}')
+    dataset_train = StandardDataset4gen('data/standard2_train.xlsx', config)
+    dataset_test = StandardDataset4gen('data/standard2_test.xlsx', config)
+    print(f'train size: {len(dataset_train)}')
+    print(f'test size: {len(dataset_test)}')
 
-    train_sampler, test_sampler = dataset.getSampler()  # 使用sampler划分数据集
-
-    train_loader = DataLoader(dataset, batch_size=config.batch_size, sampler=train_sampler, pin_memory=True)
-    test_loader = DataLoader(dataset, batch_size=config.batch_size, sampler=test_sampler, pin_memory=True)
+    train_loader = DataLoader(dataset_train, batch_size=config.batch_size, pin_memory=True)
+    test_loader = DataLoader(dataset_test, batch_size=config.batch_size, pin_memory=True)
 
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(params=model.parameters(),

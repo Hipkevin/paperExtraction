@@ -28,13 +28,14 @@ def getStandard(file_name):
 
     result = list()
     for idx, item in tqdm(data.iterrows(), desc='Extracting'):
-        if str(item['title'])[0: 2] == '基于' and '综述' not in str(item['title']) and \
-                ('[' == str(item['abstract'])[0] or '【' == str(item['abstract'])[0]):
+        # if str(item['title'])[0: 2] == '基于' and '综述' not in str(item['title']) and ('[' == str(item['abstract'])[0] or '【' == str(item['abstract'])[0]):
+        if item['title']:
             result.append([item['title'],
                            item['abstract'].replace('[', '【').replace(']', '】').replace(' ', ''),
                            item['keywords']])
 
     result = pd.DataFrame(result, columns=['title', 'abstract', 'keywords'])
+    result = result.sample(frac=1)
 
     result['abstract'] = result['abstract'].apply(replace_name)
 
@@ -46,14 +47,16 @@ def write2txt(content_list, title_list, name):
         file.write('text_a' + '\t' + 'label' + '\n')
 
         for c, t in zip(content_list, title_list):
-            file.write(c.strip() + '\t' + t.strip() + '\n')
+            file.write(str(c).strip() + '\t' + str(t).strip() + '\n')
 
 
 if __name__ == '__main__':
-    getStandard('standard.xlsx')
+    # getStandard('standard.xlsx')
+    # getStandard('all_corpus.xlsx')
 
-    # content, title = getStandard4gen('standard2.xlsx')
-    #
+    content, title = getStandard4gen('all_corpus.xlsx')
+    write2txt(content, title, 'all_corpus.txt')
+
     # cv = 0.15
     # test_index = int(len(content) * cv)
     #
