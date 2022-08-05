@@ -43,6 +43,9 @@ class PTMGeneration(nn.Module):
         elif len(args) == 2:
             x, y = args[0], args[1]
 
+            # y[:, 1:] = y[:, :-1].clone()
+            # y[:, 0] = 2
+
             out = self.PTM(input_ids=x, attention_mask=(x == 0),
                            labels=y, decoder_attention_mask=(y == 0))
 
@@ -101,8 +104,53 @@ class BartSeq2SeqModel(nn.Module):
 
         b_config = BartConfig(d_model=768,
                               decoder_layers=6, encoder_layers=6,
-                              vocab_size=len(config.vocab),
-                              decoder_start_token_id=2)
+                              vocab_size=len(config.vocab), decoder_start_token_id=1)
+        self.PTM = BartForConditionalGeneration(b_config)
+
+        self.PTM.model.shared = nn.Embedding.from_pretrained(config.emb)
+        self.embedding = nn.Embedding.from_pretrained(config.emb)
+        self.tokenizer = S2STokenizer(config.vocab)
+
+        self.classifier = nn.Linear(768, 3)
+        self.dropout = nn.Dropout(config.dropout)
+
+    def forward(self, *args):
+        if len(args) == 1:
+            x = args[0]
+
+            encoder = self.PTM.get_encoder()
+            out = encoder(attention_mask=(x == 0),
+                          input_ids=x).last_hidden_state[:, 0, :]
+
+            return self.dropout(self.classifier(out))
+
+        elif len(args) == 2:
+            x, y = args[0], args[1]
+            # y[:, 1:] = y[:, :-1].clone()
+            # y[:, 0] = 2
+
+            # x_emb = self.encoder_linear(self.embedding(x))
+            # y_emb = self.decoder_linear(self.embedding(y))
+
+            out = self.PTM(input_ids=x, attention_mask=(x == 0),
+                           labels=y, decoder_attention_mask=(y == 0))
+
+            logits = self.dropout(out.logits)
+            loss = out.loss
+
+            return logits, loss
+
+        else:
+            raise Exception("Param Error.")
+
+
+class BartSeq2SeqModel_enhanced(nn.Module):
+    def __init__(self, config: Config4gen):
+        super(BartSeq2SeqModel_enhanced, self).__init__()
+
+        b_config = BartConfig(d_model=768,
+                              decoder_layers=6, encoder_layers=6,
+                              vocab_size=len(config.vocab))
         self.PTM = BartForConditionalGeneration(b_config)
 
         self.PTM.model.shared = nn.Embedding.from_pretrained(config.emb)
@@ -113,6 +161,9 @@ class BartSeq2SeqModel(nn.Module):
 
         self.encoder_linear = nn.Linear(config.emb_size, 768)
         self.decoder_linear = nn.Linear(config.emb_size, 768)
+
+        self.key_embedding = nn.Embedding(num_embeddings=2, embedding_dim=config.emb_size)
+        self.key_linear = nn.Linear(config.emb_size, 768)
 
     def forward(self, *args):
         if len(args) == 1:
@@ -138,6 +189,70 @@ class BartSeq2SeqModel(nn.Module):
             loss = out.loss
 
             return logits, loss
+
+        elif len(args) == 3:
+            x, y, k = args[0], args[1], args[2]
+            x_emb = self.encoder_linear(self.embedding(x))
+            y_emb = self.decoder_linear(self.embedding(y))
+            k_emb = self.key_linear(self.key_embedding(k))
+
+            out = self.PTM(attention_mask=(x == 0), decoder_attention_mask=(y == 0),
+                           inputs_embeds=x_emb + k_emb,
+                           decoder_inputs_embeds=y_emb)
+
+            logits = self.dropout(out.logits)
+            loss = out.loss
+
+            return logits, loss
+
+        else:
+            raise Exception("Param Error.")
+
+
+class BartSeq2SeqModel_combine(nn.Module):
+    def __init__(self, config: Config4gen):
+        super(BartSeq2SeqModel_combine, self).__init__()
+
+        b_config = BartConfig(d_model=768,
+                              decoder_layers=6, encoder_layers=6,
+                              vocab_size=len(config.vocab), decoder_start_token_id=1)
+        self.PTM = BartForConditionalGeneration(b_config)
+
+        self.PTM.model.shared = nn.Embedding.from_pretrained(config.emb)
+        self.embedding = nn.Embedding.from_pretrained(config.emb)
+        self.tokenizer = S2STokenizer(config.vocab)
+
+        self.classifier = nn.Linear(768, 3)
+        self.dropout = nn.Dropout(config.dropout)
+
+        self.encoder_classifier = nn.Linear(768, 4)
+
+    def forward(self, *args):
+        if len(args) == 1:
+            x = args[0]
+
+            encoder = self.PTM.get_encoder()
+            out = encoder(attention_mask=(x == 0),
+                          input_ids=x).last_hidden_state[:, 0, :]
+
+            return self.dropout(self.classifier(out))
+
+        elif len(args) == 2:
+            x, y = args[0], args[1]
+            # y[:, 1:] = y[:, :-1].clone()
+            # y[:, 0] = 2
+
+            # x_emb = self.encoder_linear(self.embedding(x))
+            # y_emb = self.decoder_linear(self.embedding(y))
+
+            out = self.PTM(input_ids=x, attention_mask=(x == 0),
+                           labels=y, decoder_attention_mask=(y == 0))
+
+            logits = self.dropout(out.logits)
+            loss = out.loss
+            encoder_output = self.dropout(self.encoder_classifier(out.encoder_last_hidden_state))
+
+            return logits, loss, encoder_output
 
         else:
             raise Exception("Param Error.")

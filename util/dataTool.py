@@ -79,6 +79,80 @@ def getStandard4gen(path) -> Tuple[List, List]:
     return contents, titles
 
 
+@timer
+def getStandard4gen_combine(path) -> Tuple[List, List]:
+    """
+    提取摘要中的目的和方法，用于标题生成
+    :param path: 文件路径
+    :return: （目的+方法，标题）
+    """
+    data = pd.read_excel(path)
+
+    titles = data['title']
+    abstracts = data['abstract']
+
+    # 规则提取
+    contents = list()
+    seq_label = list()
+    for abstract in abstracts:
+        if len(abstract) < 15:
+            continue
+
+        abstract = re.split('\n|_x000D_', abstract)[0].split('。【')
+
+        content = ''
+        content_label = []
+        for a in abstract:
+
+            if '【目的】' in a:
+                content += a.strip('【目的】。')
+                content_label += len(a.strip('【目的】。')) * [0]
+            elif '方法】' in a:
+                content += a.strip('方法】。')
+                content_label += len(a.strip('方法】。')) * [1]
+            else:
+                content = a.strip()
+                content_label += len(a.strip()) * [2]
+
+        contents.append(content)
+        seq_label.append(content_label)
+
+    return contents, titles, seq_label
+
+
+@timer
+def getStandard4gen_enhanced(path) -> Tuple[List, List, List]:
+    """
+    提取摘要中的目的和方法，用于标题生成
+    :param path: 文件路径
+    :return: （目的+方法，标题）
+    """
+    data = pd.read_excel(path)
+
+    titles = data['title']
+    abstracts = data['abstract']
+    keywords = data['keywords']
+    keywords = [k.split('；') for k in keywords]
+
+    # 规则提取
+    contents = list()
+    for abstract in abstracts:
+        abstract = re.split('\n|_x000D_', abstract)[0].split('。【')
+
+        content = ''
+        for a in abstract:
+            if '【目的】' in a:
+                content += a.strip('【目的】。')
+            elif '方法】' in a:
+                content += a.strip('方法】。')
+            else:
+                content = a.strip()
+
+        contents.append(content)
+
+    return contents, titles, keywords
+
+
 class StandardDataset(Dataset):
     def __init__(self):
         super(StandardDataset, self).__init__()
@@ -147,16 +221,60 @@ class StandardDataset4gen(StandardDataset):
                                                 max_length=config.content_pad_size,
                                                 add_special_tokens=True)
                                for content in contents], dtype=torch.long)
-
-        self.Y = torch.tensor([tokenizer.encode(text=title,
-                                                truncation=True,  # 截断
-                                                padding='max_length',  # 填充到max_length
-                                                max_length=config.title_pad_size,
-                                                add_special_tokens=True)
-                               for title in self.titles], dtype=torch.long)
+        with tokenizer.as_target_tokenizer():
+            self.Y = torch.tensor([tokenizer.encode(text=title,
+                                                    truncation=True,  # 截断
+                                                    padding='max_length',  # 填充到max_length
+                                                    max_length=config.title_pad_size,
+                                                    add_special_tokens=True)
+                                   for title in self.titles], dtype=torch.long)
 
     def __getitem__(self, item):
         return self.X[item], self.Y[item], self.titles[item]
+
+    def __len__(self):
+        return len(self.X)
+
+
+class StandardDataset4gen_combine(StandardDataset):
+    def __init__(self, path, config: Config4gen):
+        super(StandardDataset4gen_combine, self).__init__()
+
+        contents, self.titles, content_label = getStandard4gen_combine(path)
+
+        # tokenizer = AutoTokenizer.from_pretrained(config.ptm_name, cache_dir=config.ptm_path)
+        tokenizer = config.tokenizer
+
+        self.X = torch.tensor([tokenizer.encode(text=content,
+                                                truncation=True,  # 截断
+                                                padding='max_length',  # 填充到max_length
+                                                max_length=config.content_pad_size,
+                                                add_special_tokens=True)
+                               for content in contents], dtype=torch.long)
+        with tokenizer.as_target_tokenizer():
+            self.Y = torch.tensor([tokenizer.encode(text=title,
+                                                    truncation=True,  # 截断
+                                                    padding='max_length',  # 填充到max_length
+                                                    max_length=config.title_pad_size,
+                                                    add_special_tokens=True)
+                                   for title in self.titles], dtype=torch.long)
+
+        seq_label = []
+        for c_label in content_label:
+            length = len(c_label)
+
+            if length <= config.content_pad_size:
+                c_label += (config.content_pad_size - length) * [3]
+
+            else:
+                c_label = c_label[: config.content_pad_size]
+
+            seq_label.append(c_label)
+
+        self.seq_label = torch.tensor(seq_label, dtype=torch.long)
+
+    def __getitem__(self, item):
+        return self.X[item], self.Y[item], self.titles[item], self.seq_label[item]
 
     def __len__(self):
         return len(self.X)
