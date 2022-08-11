@@ -3,7 +3,7 @@ import os
 
 from tqdm import tqdm
 
-from util.dataTool import getStandard4gen
+from util.dataTool import getStandard4gen, getStandard4gen_enhanced
 
 
 def replace_name(s: str) -> str:
@@ -50,8 +50,19 @@ def write2txt(content_list, title_list, name):
 
 
 if __name__ == '__main__':
-    getStandard('standard.xlsx')
+    # getStandard('standard.xlsx')
     # getStandard('all_corpus.xlsx')
+
+    c, t, keywords = getStandard4gen_enhanced('all_corpus.xlsx')
+
+    res = list()
+    for key_list in keywords:
+        for k in key_list:
+            res.append(k)
+
+    with open('keywords.txt', 'w', encoding='utf8') as file:
+        for k in set(res):
+            file.write(str(k).strip() + '\n')
 
     # content, title = getStandard4gen('all_corpus.xlsx')
     # write2txt(content, title, 'all_corpus.txt')

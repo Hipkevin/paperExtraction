@@ -10,7 +10,7 @@ if __name__ == '__main__':
     #         file.write(c.split('\t')[0] + '\n')
 
     vocab = Vocab()
-    vocab.add_from_corpus('corpus.txt', min_freq=2)
+    vocab.add_from_corpus('corpus.txt', min_freq=2, user_dict='keywords.txt')
     vocab.save_to_pkl('vocab.pkl')
 
     # tokenizer = S2STokenizer(vocab)

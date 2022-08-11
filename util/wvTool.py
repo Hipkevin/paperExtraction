@@ -64,7 +64,7 @@ class Vocab:
 
 
 class S2STokenizer(PreTrainedTokenizer):
-    def __init__(self, vocab: Vocab):
+    def __init__(self, vocab: Vocab, user_dict=None):
         super(S2STokenizer, self).__init__()
 
         self.vocab = vocab
@@ -74,12 +74,20 @@ class S2STokenizer(PreTrainedTokenizer):
         self.unk_token = '[UNK]'
         self.pad_token = '[PAD]'
 
+        self.tokenizer = jieba.Tokenizer()
+        self.tokenizer.add_word('[UNK]')
+        self.tokenizer.add_word('[PAD]')
+        self.tokenizer.add_word('[MASK]')
+
+        if user_dict is not None:
+            self.tokenizer.load_userdict(user_dict)
+
     @property
     def vocab_size(self) -> int:
         return len(self.vocab)
 
     def _tokenize(self, text, **kwargs):
-        return list(jieba.cut(text))
+        return list(self.tokenizer.cut(text))
 
     def _convert_token_to_id(self, token):
         return self.vocab[token] if token in self.vocab.token2id else 1

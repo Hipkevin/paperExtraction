@@ -132,7 +132,14 @@ def getStandard4gen_enhanced(path) -> Tuple[List, List, List]:
     titles = data['title']
     abstracts = data['abstract']
     keywords = data['keywords']
-    keywords = [k.split('；') for k in keywords]
+
+    temp = list()
+    for k in keywords:
+        if pd.notna(k):
+            if ';' in k or '；' in k:
+                # print(k, re.split('；|;', str(k)))
+                temp.append(re.split('；|;', str(k).strip(';；')))
+    keywords = temp
 
     # 规则提取
     contents = list()
