@@ -76,3 +76,61 @@
 | Bart-standard(128-10ep) | 1.27 | 3.81 | 1.71 | 0.89 | 0.48 |
 | Bart-nonstandard(128-10ep) | 0.09 | 0.25 | 0.12 | 0.06 | 0.03 |
 | Bart+CLS-standard(128-10ep) | 1.42 | 3.85 | 1.96 | 1.02 | 0.53 |
+
+### 实验组3：
+将关键词加入分词词典，重新训练词向量
+
+参数：
+
+        self.content_pad_size = 150
+        self.title_pad_size = 30
+
+        self.ptm_name = 'uer/bart-base-chinese-cluecorpussmall'
+        
+        self.emb_size = 768
+        self.emb = torch.tensor(np.load(f'wv_{self.emb_size}.npz')['embeddings'].astype('float32'))
+        self.vocab = Vocab()
+        self.vocab.load_from_pkl('vocab.pkl')
+        self.tokenizer = S2STokenizer(self.vocab)
+
+        self.epoch_size = 20
+        self.batch_size = 64
+        self.learning_rate = 2e-5
+        self.weight_decay = 1e-4
+        self.dropout = 0.5
+        self.cv = 0.15
+
+        self.T_0 = 6
+        self.T_multi = 2
+
+        self.num_beams = 6
+        self.num_beam_groups = 3
+        self.diversity_penalty = 0.5
+        self.seed = 42
+
+
+| Model (lambda=1) | BP-BLEU | BLEU-1 | BLEU-2 | BLEU-3 | BLEU-4 |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| Bart(wv)-standard | 2.10 | 13.24 | 2.46 | 1.10 | 0.57 |
+| Bart(wv)+CLS-standard | **2.19** | **14.27** | **2.60** | 1.13 | 0.58 |
+| Bart(wv)+CLS(key)-standard | 2.18 | 13.64 | 2.57 | 1.14 | 0.59 |
+| Bart(wv)+CLS-standard(extend-4-10-128) | 2.10 | 13.01 | 2.46 | 1.11 | 0.57 |
+| Bart(wv)+CLS(key)-standard(extend-4-10-128) | 2.15 | 13.59 | 2.37 | **1.15** | **0.59** |
+
+| Model (lambda=1) | BP-BLEU | BLEU-1 | BLEU-2 | BLEU-3 | BLEU-4 |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| Bart(wv)-standard(190) | 2.10 | 13.24 | 2.46 | 1.10 | 0.57 |
+| Bart(wv)+CLS-standard(190) | **2.28** | **15.54** | **2.61** | **1.17** | **0.60** |
+| Bart(wv)+CLS(key)-standard(190) | 2.22 | 15.20 | 2.52 | 1.13 | 0.59 |
+
+未将关键词加入分词词典，并训练词向量
+
+| Model(Bart(wv)+CLS-standard) | BP-BLEU | BLEU-1 | BLEU-2 | BLEU-3 | BLEU-4 |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| lambda=5 | 2.60 | 16.31 | 3.05 | 1.39 | 0.72 |
+| lambda=1 | 2.85 | 16.82 | 3.42 | **1.58** | 0.82 |
+| lambda=0.8 | 2.71 | 16.51 | 3.22 | 1.47 | 0.76 |
+| lambda=0.6 | 2.70 | 16.44 | 3.20 | 1.46 | 0.77 |
+| lambda=0.4 | **2.86** | **17.02** | **3.43** | **1.58** | **0.83** |
+| lambda=0.2 | 2.75 | 16.83 | 3.29 | 1.49 | 0.78 |
+| lambda=0.5 | 2.44 | 15.85 | 2.74 | 1.29 | 0.67 |
