@@ -118,9 +118,9 @@
 
 | Model (lambda=1) | BP-BLEU | BLEU-1 | BLEU-2 | BLEU-3 | BLEU-4 |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| Bart(wv)-standard(190) | 2.10 | 13.24 | 2.46 | 1.10 | 0.57 |
+| Bart(wv)-standard(190) | 2.22 | 15.20 | 2.52 | 1.13 | 0.59 |
 | Bart(wv)+CLS-standard(190) | **2.28** | **15.54** | **2.61** | **1.17** | **0.60** |
-| Bart(wv)+CLS(key)-standard(190) | 2.22 | 15.20 | 2.52 | 1.13 | 0.59 |
+| Bart(wv)+CLS(key)-standard(190) | 2.25 | 15.49 | 2.57 | 1.14 | 0.59 |
 
 未将关键词加入分词词典，并训练词向量 <br>
 lambda < 1 : loss = (1-lambda) * gen_loss + lambda * cls_loss <br>
